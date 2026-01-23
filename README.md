@@ -34,7 +34,7 @@ GET    /{shortCode}                            - przekierowanie
 
 - **Backend:** Symfony 8 + PHP 8.4 ( opcjonalnie API Platform 4 )
 - **Frontend:** Next.js 16 / React 19
-- **Baza danych:** PostgreSQL / MariaDB / MongoDB
+- **Baza danych:** PostgreSQL / MariaDB / MongoDB - wybierz
 - **Message Broker:** RabbitMQ
 - **Autoryzacja:** JWT token
 - **Docker:** docker-compose (starter w repo)
