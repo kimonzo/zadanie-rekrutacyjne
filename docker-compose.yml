@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Infrastructure
   database:
     image: postgres:16-alpine
     environment:
@@ -18,8 +19,56 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"   # AMQP protocol (for Symfony Messenger)
-      - "15672:15672" # Management Dashboard (http://localhost:15672)
+      - "5672:5672"   # Protocol (for Symfony)
+      - "15672:15672" # Dashboard
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: url_shortener_backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+      - rabbitmq
+    environment:
+      DATABASE_URL: "postgresql://app:secpswd123@database:5432/app?serverVersion=16&charset=utf8"
+      MESSENGER_TRANSPORT_DSN: "amqp://guest:guest@rabbitmq:5672/%2f/messages"
+      JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+      JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+      JWT_PASSPHRASE: "your_secret_passphrase"
+      CORS_ALLOW_ORIGIN: "^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
+    volumes:
+      - ./backend:/app
+    command: sh -c "sleep 5 && php bin/console doctrine:database:create --if-not-exists && php bin/console doctrine:schema:update --force && php -S 0.0.0.0:8000 -t public"
+
+  # Backend Worker
+  worker:
+    build: ./backend
+    container_name: url_shortener_worker
+    depends_on:
+      - backend
+      - rabbitmq
+    environment:
+      DATABASE_URL: "postgresql://app:secpswd123@database:5432/app?serverVersion=16&charset=utf8"
+      MESSENGER_TRANSPORT_DSN: "amqp://guest:guest@rabbitmq:5672/%2f/messages"
+    volumes:
+      - ./backend:/app
+    command: php bin/console messenger:consume async -vv
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: url_shortener_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8000/api"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   db_data:

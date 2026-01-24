@@ -5,35 +5,33 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        # Load users from the database using the 'uuid' column
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: uuid
 
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
-            pattern: ^/(_profiler|_wdt|assets|build)/
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        main:
-            lazy: true
-            provider: users_in_memory
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
+        api:
+            pattern: ^/api
+            stateless: true
+            # Activate the JWT authenticator for the API
+            jwt: ~
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # 1. Allow anyone to create a new session (get a token)
+        - { path: ^/api/session, roles: PUBLIC_ACCESS }
 
-when@test:
-    security:
-        password_hashers:
-            # Password hashers are resource-intensive by design to ensure security.
-            # In tests, it's safe to reduce their cost to improve performance.
-            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-                algorithm: auto
-                cost: 4 # Lowest possible value for bcrypt
-                time_cost: 3 # Lowest possible value for argon
-                memory_cost: 10 # Lowest possible value for argon
+        # 2. Allow anyone to see public links list (future feature)
+        - { path: ^/api/public, roles: PUBLIC_ACCESS }
+
+        # 3. Allow anyone to access the redirect endpoint (GET specific code)
+        - { path: ^/api/urls/\w+$, methods: [GET], roles: PUBLIC_ACCESS }
+
+        # 4. EVERYTHING else in /api requires a valid Token (ROLE_USER)
+        #    This specifically protects POST /api/urls
+        - { path: ^/api/urls, roles: ROLE_USER }

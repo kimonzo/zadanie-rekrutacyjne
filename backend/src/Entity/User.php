@@ -4,28 +4,23 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 36)]
+    #[ORM\Column(length: 180, unique: true)]
     private ?string $uuid = null;
 
-    #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Url::class)]
-    private Collection $urls;
-
-    public function __construct()
-    {
-        $this->urls = new ArrayCollection();
-    }
+    #[ORM\Column]
+    private array $roles = [];
 
     public function getId(): ?int
     {
@@ -40,35 +35,33 @@ class User
     public function setUuid(string $uuid): static
     {
         $this->uuid = $uuid;
-
         return $this;
     }
 
-    /**
-     * @return Collection<int, Url>
-     */
-    public function getUrls(): Collection
+    public function getUserIdentifier(): string
     {
-        return $this->urls;
+        return (string) $this->uuid;
     }
 
-    public function addUrl(Url $url): static
+    public function getRoles(): array
     {
-        if (!$this->urls->contains($url)) {
-            $this->urls->add($url);
-            $url->setOwner($this);
-        }
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+        return array_unique($roles);
+    }
 
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
         return $this;
     }
 
-    public function removeUrl(Url $url): static
+    public function getPassword(): ?string
     {
-        if ($this->urls->removeElement($url)) {
-            if ($url->getOwner() === $this) {
-            }
-        }
+        return null;
+    }
 
-        return $this;
+    public function eraseCredentials(): void
+    {
     }
 }

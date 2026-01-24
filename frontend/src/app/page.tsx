@@ -1,31 +1,49 @@
-import ShortenerForm from "./components/ShortenerForm";
+'use client';
+
+import { useState } from 'react';
+import UrlForm from './components/UrlForm';
+import LinkList from './components/LinkList';
+import PublicFeed from './components/PublicFeed'; // Import the new component
 
 export default function Home() {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleLinkCreated = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-slate-950">
+    <main className="flex min-h-screen flex-col items-center py-20 px-4 bg-slate-950 text-white overflow-hidden relative">
+      {/* Background decorations */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px]"></div>
+      </div>
 
-      {/* Background Glow Effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[128px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none" />
-
-      <div className="relative z-10 w-full max-w-2xl">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 mb-6 tracking-tight">
-            MiniLink
+      <div className="z-10 w-full max-w-2xl flex flex-col items-center gap-8">
+        <div className="text-center space-y-2 mb-4">
+          <h1 className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+            MiniLink<span className="text-blue-500">.</span>
           </h1>
-          <p className="text-slate-400 text-lg md:text-xl font-light max-w-lg mx-auto leading-relaxed">
-            Paste your long link below to get a short, shareable URL instantly.
+          <p className="text-slate-500 text-lg">
+            Secure, fast, and anonymous URL shortening.
           </p>
         </div>
 
-        {/* This loads the form component you created earlier */}
-        <ShortenerForm />
+        {/* 1. Create Link */}
+        <UrlForm onSuccess={handleLinkCreated} />
 
-        <div className="mt-16 text-center">
-          <p className="text-slate-600 text-sm font-mono">
-            Powered by Symfony 7 & Next.js 15
-          </p>
+        {/* 2. Your Links */}
+        <div className="w-full">
+          <h2 className="text-xl font-semibold text-slate-300 mb-4 px-1">Your History</h2>
+          <LinkList refreshTrigger={refreshKey} />
         </div>
+
+        {/* Visual Separator */}
+        <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent my-4"></div>
+
+        {/* 3. Public Global Feed */}
+        <PublicFeed />
       </div>
     </main>
   );
