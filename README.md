@@ -49,3 +49,4 @@ LUB
 - Fork repozytorium
 - Działający `docker-compose up`
 - README z instrukcją uruchomienia
+- Zadanie zrealizuj do 30.01.2026
