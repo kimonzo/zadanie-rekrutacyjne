@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Infrastructure
   database:
@@ -40,7 +38,17 @@ services:
       CORS_ALLOW_ORIGIN: "^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
     volumes:
       - ./backend:/app
-      command: sh -c "sleep 5 && php bin/console doctrine:database:create --if-not-exists && php bin/console doctrine:schema:update --force && php -S 0.0.0.0:8000 -t public"
+    command: >
+      sh -c "
+        composer install --no-interaction --optimize-autoloader &&
+        mkdir -p config/jwt &&
+        php bin/console lexik:jwt:generate-keypair --skip-if-exists &&
+        php bin/console doctrine:database:create --if-not-exists &&
+        php bin/console doctrine:schema:update --force &&
+        php -S 0.0.0.0:8000 -t public
+      "
+
+  # Backend Worker
   worker:
     build: ./backend
     container_name: url_shortener_worker
@@ -52,7 +60,14 @@ services:
       MESSENGER_TRANSPORT_DSN: "amqp://guest:guest@rabbitmq:5672/%2f/messages"
     volumes:
       - ./backend:/app
-    command: php bin/console messenger:consume async -vv
+    command: >
+      sh -c "
+        echo 'Waiting for backend to install dependencies...';
+        while [ ! -f vendor/autoload.php ]; do sleep 2; done;
+        echo 'Dependencies found! Starting worker...';
+        sleep 5;
+        php bin/console messenger:consume async -vv
+      "
 
   # Frontend
   frontend:
