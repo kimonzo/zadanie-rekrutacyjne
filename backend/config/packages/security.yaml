@@ -1,0 +1,37 @@
+security:
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+    providers:
+        # Load users from the database using the 'uuid' column
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: uuid
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            # Activate the JWT authenticator for the API
+            jwt: ~
+
+    access_control:
+        # 1. Allow anyone to create a new session (get a token)
+        - { path: ^/api/session, roles: PUBLIC_ACCESS }
+
+        # 2. Allow anyone to see public links list (future feature)
+        - { path: ^/api/public, roles: PUBLIC_ACCESS }
+
+        # 3. Allow anyone to access the redirect endpoint (GET specific code)
+        - { path: ^/api/urls/\w+$, methods: [GET], roles: PUBLIC_ACCESS }
+
+        # 4. EVERYTHING else in /api requires a valid Token (ROLE_USER)
+        #    This specifically protects POST /api/urls
+        - { path: ^/api/urls, roles: ROLE_USER }
