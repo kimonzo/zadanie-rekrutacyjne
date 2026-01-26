@@ -31,7 +31,7 @@ services:
       - rabbitmq
     environment:
       DATABASE_URL: "postgresql://app:secpswd123@database:5432/app?serverVersion=16&charset=utf8"
-      MESSENGER_TRANSPORT_DSN: "amqp://guest:guest@rabbitmq:5672/%2f/messages"
+      MESSENGER_TRANSPORT_DSN: "amqp://guest:guest@rabbitmq:5672/%2f"
       JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
       JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
       JWT_PASSPHRASE: "your_secret_passphrase"
@@ -57,15 +57,22 @@ services:
       - rabbitmq
     environment:
       DATABASE_URL: "postgresql://app:secpswd123@database:5432/app?serverVersion=16&charset=utf8"
-      MESSENGER_TRANSPORT_DSN: "amqp://guest:guest@rabbitmq:5672/%2f/messages"
+      MESSENGER_TRANSPORT_DSN: "amqp://guest:guest@rabbitmq:5672/%2f"
     volumes:
       - ./backend:/app
+    # FIXED COMMAND: Retries connection until RabbitMQ is ready
     command: >
       sh -c "
         echo 'Waiting for backend to install dependencies...';
         while [ ! -f vendor/autoload.php ]; do sleep 2; done;
-        echo 'Dependencies found! Starting worker...';
-        sleep 5;
+        echo 'Dependencies found! Waiting for RabbitMQ...';
+        
+        until php bin/console messenger:setup-transports; do
+          echo 'RabbitMQ is not ready yet... retrying in 5 seconds...';
+          sleep 5;
+        done;
+
+        echo 'RabbitMQ is ready! Starting Worker...';
         php bin/console messenger:consume async -vv
       "
 
